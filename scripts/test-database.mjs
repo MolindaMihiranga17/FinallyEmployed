@@ -1,5 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 
 // Real embedded PostgreSQL, with only the Supabase auth schema contract mocked.
 const db = new PGlite();
@@ -14,18 +14,21 @@ try {
     grant usage on schema auth, public to anon, authenticated;
     grant execute on function auth.uid() to anon, authenticated;
   `);
+  const migrations = new URL("../supabase/migrations/", import.meta.url);
+  for (const name of (await readdir(migrations))
+    .filter((name) => name.endsWith(".sql"))
+    .sort()) {
+    await db.exec(await readFile(new URL(name, migrations), "utf8"));
+  }
   await db.exec(
     await readFile(
-      new URL(
-        "../supabase/migrations/202610200001_initial.sql",
-        import.meta.url,
-      ),
+      new URL("../supabase/tests/rls.sql", import.meta.url),
       "utf8",
     ),
   );
   await db.exec(
     await readFile(
-      new URL("../supabase/tests/rls.sql", import.meta.url),
+      new URL("../supabase/tests/student-opportunities.sql", import.meta.url),
       "utf8",
     ),
   );

@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Link,
-  NavLink,
   Navigate,
-  Outlet,
   Route,
   Routes,
   useNavigate,
@@ -21,13 +19,15 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleHelp,
-  LayoutDashboard,
-  LogOut,
   Plus,
   Search,
   Sparkles,
-  Target,
   Trash2,
+  ArrowRight,
+  ShieldCheck,
+  FileText,
+  PencilLine,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Protected, useAuth } from "./auth";
 import { configured, db } from "./lib/supabase";
@@ -44,12 +44,22 @@ import {
   displayDate,
   downloadCsv,
   statuses,
+  roleTypes,
   type Application,
 } from "./lib/applications";
 import { ApplicationForm } from "./components/application-form";
+import { TechTags } from "./components/tech-tags";
 import { Button } from "./components/ui/button";
 import { Dialog } from "./components/ui/dialog";
 import { errorMessage } from "./lib/utils";
+import {
+  WorkspaceShell as Shell,
+  Dashboard,
+  BoardPage,
+  CalendarPage,
+  InsightsPage,
+  useApplications,
+} from "./components/workspace";
 
 function ErrorMessage({ error }: { error: unknown }) {
   return (
@@ -73,8 +83,7 @@ function Brand() {
         <BriefcaseBusiness size={21} />
       </span>
       <span>
-        finally<span className="brand-light">employed</span>
-        <span className="brand-dot">.</span>
+        Finally<span className="brand-light">Employed</span>
       </span>
     </Link>
   );
@@ -122,16 +131,14 @@ function Login() {
     return <div className="full-message">Restoring your session…</div>;
   if (session) return <Navigate to="/" replace />;
   return (
-    <div className="auth-page">
+    <div className="auth-page login-page">
       <div className="auth-card">
         <Brand />
-        <span className="eyebrow">
-          A LITTLE ORGANIZATION. A LOT OF POSSIBILITY.
-        </span>
-        <h1>Your next chapter starts here.</h1>
+        <span className="eyebrow">YOUR NEXT CHAPTER</span>
+        <h1>A clearer path to your next role.</h1>
         <p className="muted">
-          Keep every opportunity, interview, and next step in one calm
-          workspace. Make room for the job that’s right for you.
+          Applications, interviews, and follow-ups. Everything you need to move
+          your job search forward, in one place.
         </p>
         <div className="login-features">
           <span>
@@ -167,22 +174,75 @@ function Login() {
             }
           }}
         >
-          <span className="google-g">G</span>
+          <svg className="google-g" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="#4285F4"
+              d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.32 2.98-7.36Z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 22c2.7 0 4.96-.9 6.62-2.41l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0 0 12 22Z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M6.41 13.92a6 6 0 0 1 0-3.84V7.49H3.07a10 10 0 0 0 0 9.02l3.34-2.59Z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 5.96c1.47 0 2.79.51 3.82 1.51l2.87-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.49l3.34 2.59C7.2 7.72 9.4 5.96 12 5.96Z"
+            />
+          </svg>
           {busy ? "Connecting to Google…" : "Continue with Google"}
           <ArrowUpRight size={17} />
         </Button>
         <small className="muted">
-          Your applications are visible only to you.
+          <ShieldCheck size={15} /> Your workspace is private. Your progress is
+          yours.
         </small>
       </div>
-      <div className="auth-decoration">
-        <Sparkles size={32} />
+      <div className="auth-decoration" aria-hidden="true">
+        <span className="auth-label">
+          <span className="live-dot" /> BUILT FOR YOUR NEXT MOVE
+        </span>
         <p>
-          Small steps.
+          Less keeping track.
           <br />
-          New possibilities.
+          <span>More moving forward.</span>
         </p>
-        <span>YOUR JOB SEARCH, WITH A LITTLE MORE CLARITY.</span>
+        <div className="preview-journey">
+          <div>
+            <span className="preview-icon">
+              <BriefcaseBusiness size={22} />
+            </span>
+            <span>
+              <strong>Find your opportunity</strong>
+              <small>Keep the roles that matter in one place.</small>
+            </span>
+            <Check size={18} />
+          </div>
+          <div>
+            <span className="preview-icon">
+              <CalendarDays size={22} />
+            </span>
+            <span>
+              <strong>Make your next move</strong>
+              <small>Know what’s next. Show up prepared.</small>
+            </span>
+            <ArrowRight size={18} />
+          </div>
+          <div>
+            <span className="preview-icon">
+              <Sparkles size={22} />
+            </span>
+            <span>
+              <strong>Start a new chapter</strong>
+              <small>Every step brings you closer.</small>
+            </span>
+          </div>
+        </div>
+        <span className="auth-bottom">
+          A little structure. A lot more possibility.
+        </span>
       </div>
     </div>
   );
@@ -221,90 +281,6 @@ function Callback() {
       </div>
     );
   return <Navigate to="/" replace />;
-}
-function Shell() {
-  const { session } = useAuth();
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const email = session?.user.email ?? "Your account";
-  const name = session?.user.user_metadata.full_name || email.split("@")[0];
-  return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <Brand />
-        <div className="nav-label">YOUR WORKSPACE</div>
-        <nav>
-          <NavLink to="/" end>
-            <LayoutDashboard size={19} />
-            Overview
-          </NavLink>
-          <NavLink to="/applications">
-            <BriefcaseBusiness size={19} />
-            Applications
-          </NavLink>
-        </nav>
-        <div className="sidebar-note">
-          <span className="note-icon">
-            <Sparkles size={21} />
-          </span>
-          <h3>Keep showing up.</h3>
-          <p>Every application is a step toward your next chapter.</p>
-        </div>
-        <div className="account">
-          <div className="avatar">{String(name).slice(0, 1).toUpperCase()}</div>
-          <div className="account-name">
-            <strong>{name}</strong>
-            <small title={email}>{email}</small>
-          </div>
-          <button
-            aria-label="Sign out"
-            title="Sign out"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              const { error } = await db().auth.signOut();
-              if (error) setError(error.message);
-              setBusy(false);
-            }}
-          >
-            <LogOut size={18} />
-          </button>
-        </div>
-        {error && <ErrorMessage error={new Error(error)} />}
-      </aside>
-      <div className="workspace">
-        <header className="topbar">
-          <span>
-            <span className="live-dot" />
-            Your next chapter, in progress
-          </span>
-          <span className="today">
-            {new Intl.DateTimeFormat(undefined, {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            }).format(new Date())}
-          </span>
-        </header>
-        <main>
-          <Outlet />
-        </main>
-        <footer>
-          One opportunity at a time.
-          <span>
-            Made for your next move <ArrowUpRight size={13} />
-          </span>
-        </footer>
-      </div>
-    </div>
-  );
-}
-function useAll() {
-  const { session } = useAuth();
-  return useQuery({
-    queryKey: ["applications", session!.user.id, "all"],
-    queryFn: () => allApplications(session!.user.id),
-  });
 }
 function PageHeading({
   eyebrow,
@@ -354,184 +330,6 @@ function Empty({ filtered = false }: { filtered?: boolean }) {
     </div>
   );
 }
-function Dashboard() {
-  const { data, isPending, error } = useAll();
-  const { session } = useAuth();
-  const name = (session?.user.user_metadata.full_name || "").split(" ")[0];
-  const rows = data ?? [];
-  const active = rows.filter((a) =>
-    ["Applied", "Screening", "Interview"].includes(a.status),
-  );
-  const upcoming = rows
-    .filter(
-      (a) => a.next_action_at && !["Rejected", "Withdrawn"].includes(a.status),
-    )
-    .sort((a, b) => a.next_action_at!.localeCompare(b.next_action_at!))
-    .slice(0, 5);
-  const recent = [...rows]
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .slice(0, 5);
-  return (
-    <>
-      <PageHeading
-        eyebrow="YOUR JOB SEARCH, AT A GLANCE"
-        title={`Let’s make your next move${name ? `, ${name}` : ""}.`}
-        subtitle="A little clarity for the opportunities ahead."
-      >
-        <AddButton />
-      </PageHeading>
-      {error ? (
-        <ErrorMessage error={error} />
-      ) : isPending ? (
-        <div className="panel loading" role="status">
-          Loading your overview…
-        </div>
-      ) : (
-        <>
-          <div className="stats-grid">
-            {[
-              {
-                label: "Total opportunities",
-                value: rows.length,
-                icon: BriefcaseBusiness,
-                detail: "Every possibility counts",
-                color: "green",
-              },
-              {
-                label: "Active applications",
-                value: active.length,
-                icon: Target,
-                detail: "Your next chapter in motion",
-                color: "blue",
-              },
-              {
-                label: "Interviews",
-                value: rows.filter((a) => a.status === "Interview").length,
-                icon: CalendarDays,
-                detail: "A chance to tell your story",
-                color: "amber",
-              },
-              {
-                label: "Offers received",
-                value: rows.filter((a) => a.status === "Offer").length,
-                icon: Sparkles,
-                detail: "Something worth celebrating",
-                color: "purple",
-              },
-            ].map((item) => (
-              <div className="stat-card" key={item.label}>
-                <div>
-                  <span>{item.label}</span>
-                  <span className={`stat-icon ${item.color}`}>
-                    <item.icon size={19} />
-                  </span>
-                </div>
-                <strong>{item.value.toString().padStart(2, "0")}</strong>
-                <small>{item.detail}</small>
-              </div>
-            ))}
-          </div>
-          <div className="dashboard-grid">
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <h2>Your application journey</h2>
-                  <p>See where your opportunities stand.</p>
-                </div>
-                <span className="subtle-tag">{rows.length} total</span>
-              </div>
-              <div className="journey">
-                {statuses.map((status) => {
-                  const count = rows.filter((a) => a.status === status).length;
-                  return (
-                    <div className="journey-row" key={status}>
-                      <Badge status={status} />
-                      <div className="progress-track">
-                        <div
-                          className={`progress-fill status-${status.toLowerCase()}`}
-                          style={{
-                            width: `${rows.length ? (count / rows.length) * 100 : 0}%`,
-                          }}
-                        />
-                      </div>
-                      <strong>{count}</strong>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-            <section className="panel">
-              <div className="panel-heading">
-                <div>
-                  <h2>Up next</h2>
-                  <p>Your interviews and follow-ups.</p>
-                </div>
-                <CalendarDays size={20} className="muted" />
-              </div>
-              {upcoming.length ? (
-                <div className="upcoming-list">
-                  {upcoming.map((a) => (
-                    <Link
-                      key={a.id}
-                      to={`/applications/${a.id}`}
-                      className="upcoming"
-                    >
-                      <span className="calendar-tile">
-                        {new Date(a.next_action_at!).toLocaleDateString(
-                          undefined,
-                          { month: "short" },
-                        )}
-                        <strong>{new Date(a.next_action_at!).getDate()}</strong>
-                      </span>
-                      <div>
-                        <strong>{a.next_action}</strong>
-                        <span>
-                          {a.company} · {a.job_title}
-                        </span>
-                        <small
-                          className={
-                            new Date(a.next_action_at!) < new Date()
-                              ? "overdue"
-                              : ""
-                          }
-                        >
-                          {displayDate(a.next_action_at, true)}
-                        </small>
-                      </div>
-                      <ArrowUpRight size={17} />
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="small-empty">
-                  <CalendarDays size={28} />
-                  <h3>A little breathing room</h3>
-                  <p>
-                    Add a next action to an application
-                    <br />
-                    and it’ll appear here.
-                  </p>
-                </div>
-              )}
-            </section>
-          </div>
-          <section className="panel recent-panel">
-            <div className="panel-heading">
-              <div>
-                <h2>Recently added</h2>
-                <p>The latest possibilities on your radar.</p>
-              </div>
-              <Link to="/applications" className="text-link">
-                View all <ArrowUpRight size={16} />
-              </Link>
-            </div>
-            {recent.length ? <ApplicationTable rows={recent} /> : <Empty />}
-          </section>
-        </>
-      )}
-    </>
-  );
-}
 function ApplicationTable({ rows }: { rows: Application[] }) {
   return (
     <div className="table-wrap">
@@ -561,6 +359,7 @@ function ApplicationTable({ rows }: { rows: Application[] }) {
                       {a.company}
                       {a.location ? ` · ${a.location}` : ""}
                     </small>
+                    <TechTags tags={a.tech_stack} />
                   </span>
                 </Link>
               </td>
@@ -599,6 +398,7 @@ function ApplicationTable({ rows }: { rows: Application[] }) {
             </p>
             <Badge status={a.status} />
             <small>Applied {displayDate(a.applied_on)}</small>
+            <TechTags tags={a.tech_stack} />
             {a.next_action && (
               <p>
                 {a.next_action}
@@ -619,6 +419,21 @@ function Applications() {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<unknown>(null);
   const search = params.get("q") || "";
+  const roleType = roleTypes.includes(
+    params.get("role") as (typeof roleTypes)[number],
+  )
+    ? params.get("role")!
+    : "";
+  const technology = (params.get("tech") ?? "").slice(0, 50);
+  const all = useApplications();
+  const technologies = [
+    ...new Set(
+      (all.data ?? [])
+        .flatMap((row) => row.tech_stack ?? [])
+        .concat(technology ? [technology] : []),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
+  const active = params.get("group") === "active";
   const status = statuses.includes(
     params.get("status") as (typeof statuses)[number],
   )
@@ -642,16 +457,26 @@ function Applications() {
       if (value) next.set(key, value);
       else next.delete(key);
       if (key !== "page") next.delete("page");
+      if (key === "status") next.delete("group");
+      if (key === "group") next.delete("status");
       return next;
     });
   const query = useQuery({
     queryKey: [
       "applications",
       session!.user.id,
-      { search, status, sort, page },
+      { search, status, sort, page, active, roleType, technology },
     ],
     queryFn: () =>
-      listApplications(session!.user.id, { search, status, sort, page }),
+      listApplications(session!.user.id, {
+        search,
+        status,
+        sort,
+        page,
+        active,
+        roleType,
+        technology,
+      }),
   });
   const totalPages = Math.max(
     1,
@@ -671,9 +496,9 @@ function Applications() {
   return (
     <>
       <PageHeading
-        eyebrow="EVERY OPPORTUNITY, ONE PLACE"
+        eyebrow="YOUR OPPORTUNITIES"
         title="Your applications"
-        subtitle="Keep track of where you’ve been and where you’re headed."
+        subtitle="Manage your search, from first application to final offer."
       >
         <Button
           variant="outline"
@@ -697,6 +522,33 @@ function Applications() {
       </PageHeading>
       {Boolean(exportError) && <ErrorMessage error={exportError} />}
       <section className="panel">
+        <div
+          className="status-tabs"
+          role="group"
+          aria-label="Application stage"
+        >
+          <button
+            aria-pressed={!status && !active}
+            onClick={() => change("status", "")}
+          >
+            All applications
+          </button>
+          <button
+            aria-pressed={active && !status}
+            onClick={() => change("group", "active")}
+          >
+            In progress
+          </button>
+          {statuses.map((s) => (
+            <button
+              key={s}
+              aria-pressed={status === s}
+              onClick={() => change("status", s)}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
         <div className="filters">
           <form
             className="search-form"
@@ -716,16 +568,11 @@ function Applications() {
               Search
             </Button>
           </form>
-          <select
-            aria-label="Filter by status"
-            value={status}
-            onChange={(e) => change("status", e.target.value)}
-          >
-            <option value="">All statuses</option>
-            {statuses.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
+          <SlidersHorizontal
+            size={17}
+            className="filter-icon"
+            aria-hidden="true"
+          />
           <select
             aria-label="Sort applications"
             value={sort}
@@ -735,7 +582,50 @@ function Applications() {
             <option value="next">Next action date</option>
             <option value="company">Company A–Z</option>
           </select>
+          <select
+            aria-label="Filter by role type"
+            value={roleType}
+            onChange={(e) => change("role", e.target.value)}
+          >
+            <option value="">All role types</option>
+            {roleTypes.map((type) => (
+              <option key={type}>{type}</option>
+            ))}
+          </select>
+          <select
+            aria-label="Filter by technology"
+            value={technology}
+            onChange={(e) => change("tech", e.target.value)}
+          >
+            <option value="">All technologies</option>
+            {technologies.map((tech) => (
+              <option key={tech}>{tech}</option>
+            ))}
+          </select>
         </div>
+        {(search || status || active || roleType || technology) && (
+          <div className="filter-summary">
+            <span>
+              {active ? "In progress" : status || "All statuses"}
+              {roleType && ` · ${roleType}`}
+              {technology && ` · ${technology}`}
+              {search && (
+                <>
+                  {" "}
+                  · Results for <strong>“{search}”</strong>
+                </>
+              )}
+            </span>
+            <button
+              onClick={() => {
+                setDraft("");
+                setParams(sort !== "recent" ? { sort } : {});
+              }}
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
         {query.error ? (
           <ErrorMessage error={query.error} />
         ) : query.isPending ? (
@@ -747,12 +637,17 @@ function Applications() {
             {query.data.rows.length ? (
               <ApplicationTable rows={query.data.rows} />
             ) : (
-              <Empty filtered={!!(search || status)} />
+              <Empty
+                filtered={
+                  !!(search || status || active || roleType || technology)
+                }
+              />
             )}
             <div className="pagination">
               <span>
-                {query.data.count} opportunit
-                {query.data.count === 1 ? "y" : "ies"}
+                {query.data.count
+                  ? `Showing ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, query.data.count)} of ${query.data.count} ${query.data.count === 1 ? "application" : "applications"}`
+                  : "0 applications"}
                 {query.isFetching && " · Refreshing…"}
               </span>
               <div>
@@ -805,9 +700,13 @@ function Editor() {
         Back to {id ? "application" : "applications"}
       </Link>
       <PageHeading
-        eyebrow="MAKE ROOM FOR POSSIBILITY"
-        title={id ? "Edit application" : "A new opportunity"}
-        subtitle="Capture the details now. Your future self will thank you."
+        eyebrow="APPLICATION WORKSPACE"
+        title={id ? "Edit application" : "Add an opportunity"}
+        subtitle={
+          id
+            ? "Keep your details and next steps up to date."
+            : "Start with the essentials. Add more details as you go."
+        }
       />
       <section className="panel editor-panel">
         {id && query.isPending ? (
@@ -891,13 +790,18 @@ function Details() {
           Delete
         </Button>
         <Button asChild>
-          <Link to={`/applications/${id}/edit`}>Edit application</Link>
+          <Link to={`/applications/${id}/edit`}>
+            <PencilLine size={16} />
+            Edit application
+          </Link>
         </Button>
       </PageHeading>
       <div className="detail-grid">
         <section className="panel detail-panel">
           <div className="panel-heading">
-            <h2>Opportunity details</h2>
+            <h2>
+              <BriefcaseBusiness size={18} /> Opportunity details
+            </h2>
             <Badge status={a.status} />
           </div>
           <dl>
@@ -931,8 +835,75 @@ function Details() {
               <dd>{displayDate(a.updated_at, true)}</dd>
             </div>
           </dl>
-          <div className="detail-block">
-            <h3>Next action</h3>
+          <div className="detail-block student-details">
+            <h3>Tech stack & preparation</h3>
+            <dl>
+              <div>
+                <dt>Role type</dt>
+                <dd>{a.role_type ?? "Unspecified"}</dd>
+              </div>
+              <div>
+                <dt>Application deadline</dt>
+                <dd>{displayDate(a.application_deadline ?? null)}</dd>
+              </div>
+              <div className="span-2">
+                <dt>Required technologies</dt>
+                <dd>
+                  {a.tech_stack?.length ? (
+                    <TechTags tags={a.tech_stack} />
+                  ) : (
+                    "No technologies added yet."
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Coding assessment</dt>
+                <dd>{a.assessment_status ?? "Not started"}</dd>
+              </div>
+              <div>
+                <dt>Assessment link</dt>
+                <dd>
+                  {a.assessment_url ? (
+                    <a
+                      className="text-link"
+                      href={a.assessment_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open assessment <ArrowUpRight size={15} />
+                    </a>
+                  ) : (
+                    "Not added"
+                  )}
+                </dd>
+              </div>
+              <div className="span-2">
+                <dt>Portfolio or project</dt>
+                <dd>
+                  {a.portfolio_url ? (
+                    <a
+                      className="text-link"
+                      href={a.portfolio_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View project <ArrowUpRight size={15} />
+                    </a>
+                  ) : (
+                    "Not added"
+                  )}
+                </dd>
+              </div>
+            </dl>
+            <h3>Preparation notes</h3>
+            <p className="notes">
+              {a.prep_notes || "Add topics to revise and projects to discuss."}
+            </p>
+          </div>
+          <div className="detail-block next-action-block">
+            <h3>
+              <CalendarDays size={18} /> Next action
+            </h3>
             <p>{a.next_action || "No next action added yet."}</p>
             {a.next_action_at && (
               <span className="action-date">
@@ -942,7 +913,9 @@ function Details() {
             )}
           </div>
           <div className="detail-block">
-            <h3>Notes</h3>
+            <h3>
+              <FileText size={18} /> Notes
+            </h3>
             <p className="notes">
               {a.notes ||
                 "A space for contacts, interview prep, and things to remember."}
@@ -953,7 +926,7 @@ function Details() {
           <div className="panel-heading">
             <div>
               <h2>Status history</h2>
-              <p>Every step of the journey.</p>
+              <p>A timeline of your application.</p>
             </div>
           </div>
           {events.error ? (
@@ -1037,6 +1010,9 @@ export default function App() {
         }
       >
         <Route index element={<Dashboard />} />
+        <Route path="board" element={<BoardPage />} />
+        <Route path="calendar" element={<CalendarPage />} />
+        <Route path="insights" element={<InsightsPage />} />
         <Route path="applications" element={<Applications />} />
         <Route path="applications/new" element={<Editor />} />
         <Route path="applications/:id" element={<Details />} />

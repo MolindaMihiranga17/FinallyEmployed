@@ -17,7 +17,7 @@ Open http://127.0.0.1:5173. Until real environment values are supplied, the app 
 ## Supabase setup
 
 1. Create a Supabase project at https://supabase.com/dashboard.
-2. In the SQL Editor run `supabase/migrations/20261_initial.sql0200001` once. For future changes, add a new migration instead of rerunning this one. Alternatively link a Supabase CLI project and run `supabase db push`.
+2. For a new project, run `supabase/migrations/202610200001_initial.sql` followed by `supabase/migrations/202610200002_student_opportunities.sql` in the SQL Editor, once each. For an existing project with the initial migration already applied, run only `202610200002_student_opportunities.sql`. Alternatively link a Supabase CLI project and run `supabase db push`.
 3. In the project Connect/API settings copy the project URL and **publishable** key to `.env.local`:
 
 ```dotenv
@@ -48,6 +48,32 @@ Official references: [Google login](https://supabase.com/docs/guides/auth/social
 - UTC timestamps and local-time display/input; application dates remain date-only.
 - Export **all your records**, independent of current filters, in batches rather than silently truncating to the Supabase response limit. CSV quotes/newlines are escaped and formula prefixes neutralized.
 - Mobile cards, labeled forms, keyboard focus styles, and a focus-managed deletion dialog. Save failures preserve the form.
+
+## Workspace, board, and calendar
+
+- The slate workspace uses bundled Poppins fonts, rounded cards, pill navigation, and a dark follow-up panel.
+- **Board:** drag opportunities between stages or use each card's stage selector with a keyboard or touchscreen. Moving an undated Saved opportunity into another stage asks for the real application date. Changes persist to Supabase and automatically update status history.
+- **Calendar:** browse months, jump to a month, select a date to see its agenda, and export all scheduled next actions for open opportunities to an ICS file. Exported events last one hour and use UTC timestamps; the interface displays your local time.
+- **Follow-ups:** the bell opens all open next actions, including unscheduled ones. The dashboard shows the first five. Completing an action asks for confirmation, then clears its description and scheduled time in Supabase. Completed actions are not kept in a separate task archive; application notes and status history remain available.
+- **Insights:** activity bars count recorded application dates over the last seven days. Weekly goals count Monday through today. The response snapshot is the share of submitted opportunities currently in Screening, Interview, Offer, or Rejected; it is not a historical conversion metric.
+- **Settings:** change the weekly goal (default 5, range 1–100) and interface animation preference. These preferences are stored on the current browser, scoped to the signed-in user's ID.
+- **Appearance and readability:** Settings → Appearance offers Light, Dark, and Use device. Appearance is saved for this browser, applies to login and workspace screens, and follows device changes when selected. Poppins text uses larger controls and headings, a 12px minimum for small labels, stronger secondary text contrast, and single-column dashboard cards on phones.
+- **Accent colors:** Settings offers Ocean, Violet, Teal, Rose, Amber, and Graphite for actions, highlights, and charts. Your choice is saved on this browser and works in both appearance modes.
+- **Motion:** a short page entrance, counters that continue from their current value, chart bars and goal rings, subtle hover feedback, and coordinated dialog opening/closing. Cards avoid overlapping entrance effects. Device reduced-motion settings override interface animations.
+
+## IT student opportunities
+
+Apply `supabase/migrations/202610200002_student_opportunities.sql` before using the updated create/edit forms with your hosted database. It preserves existing records, supplies defaults, and keeps ownership policies and status-history triggers.
+
+- Track Internship, Graduate, Junior, Part-time, Full-time, and Contract roles.
+- Add up to 20 required technologies, including custom tools. Comma-separated entry and suggestion buttons support C#, .NET, and Node.js. Duplicate names are removed without regard to case.
+- Record an application deadline, coding assessment progress and link, the portfolio/project submitted for this role, and preparation notes.
+- Filter by role type and exact technology tag alongside search, stage, sorting, and pagination. Technology choices come from your own records. Board search also includes technologies.
+- The dashboard shows deadlines for Saved opportunities, flags past deadlines, lists Preparing/Scheduled assessments on open opportunities, and shows technology frequency across tracked roles. No automatic status changes or notifications are sent.
+- Schedule assessment reminders with next-action fields. The calendar shows scheduled next actions; application deadlines are date-only and appear in the toolkit and details.
+- CSV includes the student fields. Database tests cover validation and cross-user isolation; hosted Supabase and OAuth checks still require external access.
+
+These changes are local. Apply the migration to Supabase before updating your hosted frontend.
 
 ## Security and data
 

@@ -3,7 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#195c49" />
+    <meta name="theme-color" content="#eef2f7" />
+    <script>
+      try {
+        const theme = localStorage.getItem("finallyemployed:theme");
+        const dark =
+          theme === "dark" ||
+          (theme === "system" &&
+            matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+        const accent = localStorage.getItem("finallyemployed:accent");
+        document.documentElement.dataset.accent = [
+          "blue",
+          "violet",
+          "teal",
+          "rose",
+          "amber",
+          "slate",
+        ].includes(accent)
+          ? accent
+          : "blue";
+      } catch {}
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta
       name="description"
       content="A calmer place to manage your job search. Track applications, interviews, and your next move."

@@ -3,6 +3,8 @@ import {
   type Application,
   type ApplicationInput,
   type History,
+  applicationSchema,
+  emptyApplication,
   toPayload,
 } from "./applications";
 export type Filters = {
@@ -10,6 +12,9 @@ export type Filters = {
   status: string;
   sort: string;
   page: number;
+  active?: boolean;
+  roleType?: string;
+  technology?: string;
 };
 export const PAGE_SIZE = 12;
 export async function listApplications(userId: string, filters: Filters) {
@@ -24,6 +29,11 @@ export async function listApplications(userId: string, filters: Filters) {
   if (search)
     query = query.or(`company.ilike.%${search}%,job_title.ilike.%${search}%`);
   if (filters.status) query = query.eq("status", filters.status);
+  else if (filters.active)
+    query = query.in("status", ["Applied", "Screening", "Interview"]);
+  if (filters.roleType) query = query.eq("role_type", filters.roleType);
+  if (filters.technology)
+    query = query.contains("tech_stack", [filters.technology]);
   const column =
     filters.sort === "next"
       ? "next_action_at"
@@ -103,4 +113,37 @@ export async function deleteApplication(id: string, userId: string) {
     .select("id")
     .single();
   if (error || !data) throw error ?? new Error("Application not found");
+}
+export async function moveApplication(
+  application: Application,
+  status: ApplicationInput["status"],
+  appliedOn: string,
+) {
+  applicationSchema.parse({
+    ...emptyApplication,
+    company: application.company,
+    job_title: application.job_title,
+    status,
+    applied_on: appliedOn,
+  });
+  const { data, error } = await db()
+    .from("applications")
+    .update({ status, applied_on: appliedOn || null })
+    .eq("id", application.id)
+    .eq("user_id", application.user_id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Application;
+}
+export async function completeNextAction(application: Application) {
+  const { data, error } = await db()
+    .from("applications")
+    .update({ next_action: "", next_action_at: null })
+    .eq("id", application.id)
+    .eq("user_id", application.user_id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Application;
 }
